@@ -27,25 +27,41 @@ if ENV:
     LOCAL_DEPLOYMENT = os.getenv('LOCAL_DEPLOYMENT', 'false').lower() == 'true' 
     PORT = os.environ.get('PORT')
 
-async def fastmap(iterable: Iterable, operation: Callable, max_workers=100) -> list:
+def batch_operation(
+    items: List[Any],
+    operation: Callable, 
+    **kwargs,
+) -> List[Any]:
+    """Performs a single operation on a batch of items with optional keyword arguments."""
+    results = [operation(item, **kwargs) for item in items]
+    return results
+
+async def fastmap(
+    iterable: Iterable, 
+    operation: Callable, 
+    batch_size: int = 5, 
+    max_workers: int = 100, 
+    **kwargs,
+) -> List:
     """
-    Maps an operation over an iterable with 'max_workers' workers.
+    Maps an operation over an iterable with 'max_workers' workers and optional kwargs, maintaining input order.
     
     Parameters:
     - iterable: An Iterable of any type.
-    - operation: A Callable that takes an item from iterable and performs an operation.
+    - operation: A Callable that applies to a batch of items from iterable.
+    - batch_size: Number of items in each batch.
     - max_workers: The maximum number of worker threads to use.
-    
-    Returns:
-    - A list containing None for successful operations or an exception if an error occurred.
-    
-    Example:
-    >> item_list: Iterable = ['this is an item', 'this is another item']
-    >> result = fastmap(
-            iterable=item_list, 
-            operation=print_function
-        )
-    >> 'this is an item'\n'this is another item'
+    - kwargs: Additional keyword arguments to pass to the operation.
     """
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        return list(executor.map(operation, iterable, timeout=None))
+    if not iterable:
+        return iterable
+    
+    batch_size = batch_size if batch_size <= len(iterable) else len(iterable)
+    batches = [iterable[i:i + batch_size] for i in range(0, len(iterable), batch_size)]
+    optimal_workers = min(len(batches), max_workers)
+    loop = asyncio.get_running_loop()
+    
+    with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+        futures = [loop.run_in_executor(executor, lambda b=batch: batch_operation(b, operation, **kwargs)) for batch in batches]
+        results = await asyncio.gather(*futures)
+        return [item for sublist in results for item in sublist]
