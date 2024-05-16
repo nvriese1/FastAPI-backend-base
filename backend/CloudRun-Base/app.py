@@ -25,19 +25,14 @@ from fastapi.responses import JSONResponse
 logging.basicConfig(level=logging.INFO, force=True) 
 
 # Custom modules / libraries
-from utils.default import some_utility
+from utils.default import *
 
 # Load environment
-ENV = os.environ.get('ENV', ".env") 
-load_dotenv(ENV, override=True)
-logging.debug(f'app.py: reading environment variables from ENV: {ENV}')
+load_dotenv(override=True)
 
-ENV = load_dotenv()
-if ENV:    
-    # Deployment configuration
-    LOCAL_DEPLOYMENT = os.getenv('LOCAL_DEPLOYMENT', 'false').lower() == 'true'  
-    PORT = os.environ.get('PORT')
-    
+# Deployment configuration
+LOCAL_DEPLOYMENT = os.getenv('LOCAL_DEPLOYMENT', 'false').lower() == 'true'  
+PORT = os.environ.get('PORT')    
 logging.info(f'PORT: {PORT}')
 
 # Placeholder for some startup process (loading models, etc.)

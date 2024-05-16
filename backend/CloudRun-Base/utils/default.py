@@ -20,12 +20,11 @@ from fastapi import FastAPI, Request, HTTPException, Depends, APIRouter
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger('default')
+load_dotenv()
 
-ENV = load_dotenv()
-if ENV:    
-    # Deployment configuration
-    LOCAL_DEPLOYMENT = os.getenv('LOCAL_DEPLOYMENT', 'false').lower() == 'true' 
-    PORT = os.environ.get('PORT')
+# Deployment configuration
+LOCAL_DEPLOYMENT = os.getenv('LOCAL_DEPLOYMENT', 'false').lower() == 'true' 
+PORT = os.environ.get('PORT')
 
 def batch_operation(
     items: List[Any],
@@ -33,8 +32,7 @@ def batch_operation(
     **kwargs,
 ) -> List[Any]:
     """Performs a single operation on a batch of items with optional keyword arguments."""
-    results = [operation(item, **kwargs) for item in items]
-    return results
+    return [operation(item, **kwargs) for item in items]
 
 async def fastmap(
     iterable: Iterable, 
